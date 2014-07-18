@@ -1,0 +1,70 @@
+#!/bin/bash
+
+# NRK Radio download script
+# Originally written by Ingvar 
+# Updated version by Morpfh
+# Updated version by zm1990s in 2014
+# SubRip: http://forum.doom9.org/showthread.php?p=470941#post470941
+#
+
+if [ "$*" = "" ]; then
+  echo "This script will download audio+cover+playlist from a radio.nrk.no url"
+  echo "Usage: $0 url [-p [proxy-address] ]"
+  echo -e "\nExample:\n $0 http://tv.nrk.no/serie/store-leker/koid24008909/sesong-1/episode-5 "
+  echo -e "\nor use http proxy: \n $0 http://tv.nrk.no/serie/store-leker/koid24008909/sesong-1/episode-5 -p 127.0.0.1:8087 \n"
+  echo -e "the default proxy address is Goagent's 127.0.0.1:8087 \n"
+  exit 0
+fi
+#echo $2
+if [ "$2" != "-p" ]
+then proxy=""
+else if [ "$3" = "" ]
+then proxy="127.0.0.1:8087"
+else proxy="$3"
+fi
+fi
+
+
+url="$1"
+hdcore="2.7.6"
+user_agent="Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:24.0) Gecko/20100101 Firefox/24.0"
+title=$(
+  curl -x "$proxy" -A "$user_agent" -s "$url" | grep '<title>' | sed 's/.*<title>\(.*\)<\/title>.*/\1/;'
+)
+mkdir "$title"
+cd "$title"
+vfile="$title.flv"
+playlistsub="$title.txt"
+if [ -f "$vfile" ]; then
+  echo "Error: File \"$vfile\" already exists."
+  exit 2
+fi
+
+echo "Downloading $title"
+
+manifest=$(
+  curl -x "$proxy" -A "$user_agent" -s "$url" | awk -F\" '/data-media="/ {print $2}'
+)
+manifest="$manifest?hdcore=$hdcore"
+
+playlist=$(
+  curl -x "$proxy" -s "$url" | awk -F\" '/programplaylist/ { print $2 }'
+) 
+cover=$(
+  curl -x "$proxy" -s "$url" | awk -F\" '/data-posterimage/ { print $2 }'
+) 
+#echo "http://tv.nrk.no$playlist"
+wget -Y on -e "http_proxy=http://$proxy" "$cover" -O "$title.jpg"
+
+echo "Downloading and converting playlist"
+curl -x "$proxy" -s "http://tv.nrk.no$playlist" |grep li|sed -e 's/<li>//' -e 's/[^t]//' -e 's/[^t]//' -e 's/<\/li>//' -n -e '2,$p'|nl -s ".  " >"$playlistsub"
+echo downfinish
+
+
+echo "Downloading and converting audio..."
+php ../AdobeHDS.php --quality high --delete --outfile "$vfile" --manifest "$manifest";
+
+# Clean up
+rm -f Cookies.txt
+echo "Audio was stored in \"$vfile\""
+
