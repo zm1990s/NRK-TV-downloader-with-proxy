@@ -33,3 +33,20 @@ or	./nrk-download http://tv.nrk.no/serie/store-leker/koid24008909/sesong-1/episo
 
 **the usage is the same as nrk-download**
 
+**Dependences**
+
+_Fedora:_
+*  php
+*  php-bcmath
+*  perl-DateTime-Precise
+*  perl-Text-Iconv
+*  perl-HTML-TokeParser-Simple
+*  perl-libwww-perl
+
+_Debian/Ubuntu:_
+*  php5-cli
+*  php5-curl
+*  libwww-perl
+*  libtext-iconv-perl
+*  libhtml-tokeparser-simple-perl
+*  libdatetime-precise-perl (cpan module - no .deb available, try running 'dh-make-perl --build --cpan DateTime::Precise' )
