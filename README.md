@@ -5,6 +5,8 @@ This is a set of scripts help you to download subtitles and videos from tv.nrk.n
 
 scripts orginally written by Ingvar Hagelund (http://users.linpro.no/ingvar/nrk/)
 
+The author has written a blog about the scripts in http://ingvar.blog.redpill-linpro.com/2012/05/31/downloading-hd-content-from-tv-nrk-no/comment-page-1/
+
 you can find the original scripts in here (http://users.linpro.no/ingvar/nrk/)
 
 And I made some modification so it can support http proxy
