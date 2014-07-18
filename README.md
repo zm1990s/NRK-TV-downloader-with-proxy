@@ -29,5 +29,7 @@ or 	./nrk-download http://tv.nrk.no/serie/store-leker/koid24008909/sesong-1/epis
 
 or	./nrk-download http://tv.nrk.no/serie/store-leker/koid24008909/sesong-1/episode-5 -p
 
+**nrk-radio-download is for NRK radio only**
 
+**the usage is the same as nrk-download**
 
