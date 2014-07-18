@@ -1,0 +1,69 @@
+#!/bin/bash
+
+# NRK subtitles download script
+# Originally written by Ingvar 
+# Updated version by Morpfh
+#
+# SubRip: http://forum.doom9.org/showthread.php?p=470941#post470941
+#
+
+if [ "$1" = "" ]; then
+  echo "This script will download video and subtitles from a tv.nrk.no url"
+  echo "Usage: $0 url [proxy-address]"
+  echo -e "\nExample:\n $0 http://tv.nrk.no/serie/store-leker/koid24008909/sesong-1/episode-5 127.0.0.1:8087 \n "
+  echo -e "the default proxy address is Goagent's 127.0.0.1:8087 \n"
+  exit 0
+fi
+if [ -z $2 ]
+then proxy="127.0.0.1:8087"
+else proxy="$2"
+fi
+echo $proxy
+url="$1"
+hdcore="2.7.6"
+user_agent="Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:24.0) Gecko/20100101 Firefox/24.0"
+title=$(
+  curl -x http://"$proxy" -A "$user_agent" -s "$url" | grep '<title>' | sed 's/.*<title>\(.*\)<\/title>.*/\1/;'
+)
+
+vfile="$title.flv"
+subf="$title.srt"
+
+if [ -f "$subf" ]; then
+  echo "Error: File \"$subf\" already exists."
+  exit 2
+fi
+
+if [ -f "$vfile" ]; then
+  echo "Error: File \"$vfile\" already exists."
+  exit 2
+fi
+
+echo "Downloading $title"
+
+manifest=$(
+  curl -x http://"$proxy" -A "$user_agent" -s "$url" | awk -F\" '/data-media="/ {print $2}'
+)
+manifest="$manifest?hdcore=$hdcore"
+
+subtitles=$(
+  curl -x http://"$proxy" -A "$user_agent" -s "$url" | awk -F\" '/data-subtitlesurl/ { print $2 }'
+) 
+
+echo "Downloading and converting subtitles..."
+wget -Y on -e "http_proxy=http://$proxy" "http://tv.nrk.no$subtitles" -O subtitle.tmp
+echo downfinish
+if perl ./nrk-subtitles ./subtitle.tmp > "$subf"; then
+	rm subtitle.tmp
+	echo Finished 
+else
+	echo Failed
+fi
+
+echo "Downloading and converting video..."
+php ./AdobeHDS.php --quality high --delete --outfile "$vfile" --manifest "$manifest";
+
+# Clean up
+rm -f Cookies.txt
+echo "Video was stored in \"$vfile\""
+
