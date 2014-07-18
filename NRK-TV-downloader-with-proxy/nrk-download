@@ -3,22 +3,26 @@
 # NRK subtitles download script
 # Originally written by Ingvar 
 # Updated version by Morpfh
-#
+# Updated version by zm1990s in 2014
 # SubRip: http://forum.doom9.org/showthread.php?p=470941#post470941
 #
 
-if [ "$1" = "" ]; then
+if [ "$*" = "" ]; then
   echo "This script will download video and subtitles from a tv.nrk.no url"
-  echo "Usage: $0 url [proxy-address]"
-  echo -e "\nExample:\n $0 http://tv.nrk.no/serie/store-leker/koid24008909/sesong-1/episode-5 127.0.0.1:8087 \n "
+  echo "Usage: $0 url [-p [proxy-address] ]"
+  echo -e "\nExample:\n $0 http://tv.nrk.no/serie/store-leker/koid24008909/sesong-1/episode-5 "
+  echo -e "\nor use http proxy: \n $0 http://tv.nrk.no/serie/store-leker/koid24008909/sesong-1/episode-5 -p 127.0.0.1:8087 \n"
   echo -e "the default proxy address is Goagent's 127.0.0.1:8087 \n"
   exit 0
 fi
-if [ -z $2 ]
+if [ "$2" != "-p" ]
+then proxy=""
+else if [ "$3" = "" ]
 then proxy="127.0.0.1:8087"
-else proxy="$2"
+else proxy="$3"
 fi
-echo $proxy
+fi
+#echo $proxy
 url="$1"
 hdcore="2.7.6"
 user_agent="Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:24.0) Gecko/20100101 Firefox/24.0"
