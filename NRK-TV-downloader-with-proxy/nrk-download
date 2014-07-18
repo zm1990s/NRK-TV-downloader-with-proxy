@@ -15,6 +15,7 @@ if [ "$*" = "" ]; then
   echo -e "the default proxy address is Goagent's 127.0.0.1:8087 \n"
   exit 0
 fi
+#echo $2
 if [ "$2" != "-p" ]
 then proxy=""
 else if [ "$3" = "" ]
@@ -23,11 +24,12 @@ else proxy="$3"
 fi
 fi
 #echo $proxy
+#echo $proxy
 url="$1"
 hdcore="2.7.6"
 user_agent="Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:24.0) Gecko/20100101 Firefox/24.0"
 title=$(
-  curl -x http://"$proxy" -A "$user_agent" -s "$url" | grep '<title>' | sed 's/.*<title>\(.*\)<\/title>.*/\1/;'
+  curl -x "$proxy" -A "$user_agent" -s "$url" | grep '<title>' | sed 's/.*<title>\(.*\)<\/title>.*/\1/;'
 )
 
 vfile="$title.flv"
@@ -46,12 +48,12 @@ fi
 echo "Downloading $title"
 
 manifest=$(
-  curl -x http://"$proxy" -A "$user_agent" -s "$url" | awk -F\" '/data-media="/ {print $2}'
+  curl -x "$proxy" -A "$user_agent" -s "$url" | awk -F\" '/data-media="/ {print $2}'
 )
 manifest="$manifest?hdcore=$hdcore"
 
 subtitles=$(
-  curl -x http://"$proxy" -A "$user_agent" -s "$url" | awk -F\" '/data-subtitlesurl/ { print $2 }'
+  curl -x "$proxy" -A "$user_agent" -s "$url" | awk -F\" '/data-subtitlesurl/ { print $2 }'
 ) 
 
 echo "Downloading and converting subtitles..."
