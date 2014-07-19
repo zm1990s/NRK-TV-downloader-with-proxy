@@ -1,10 +1,8 @@
 #!/bin/bash
 
-# NRK subtitles download script
 # Originally written by Ingvar 
 # Updated version by Morpfh
 # Updated version by zm1990s in 2014
-# SubRip: http://forum.doom9.org/showthread.php?p=470941#post470941
 #
 
 if [ "$*" = "" ]; then
@@ -15,6 +13,7 @@ if [ "$*" = "" ]; then
   echo -e "the default proxy address is Goagent's 127.0.0.1:8087 \n"
   exit 0
 fi
+
 #echo $2
 if [ "$2" != "-p" ]
 then proxy=""
@@ -23,7 +22,7 @@ then proxy="127.0.0.1:8087"
 else proxy="$3"
 fi
 fi
-
+curl -x "$proxy" -s "radio.nrk.no"||echo "Error: Cannot connect to NRK Radio, Please consider using a Proxy"&&exit 1
 
 url="$1"
 hdcore="2.7.6"
@@ -54,11 +53,11 @@ cover=$(
   curl -x "$proxy" -s "$url" | awk -F\" '/data-posterimage/ { print $2 }'
 ) 
 #echo "http://tv.nrk.no$playlist"
-[ -f "$title.jpg" ]||wget -Y on -e "http_proxy=http://$proxy" "$cover" -O "$title.jpg"
+[ -f "$title.jpg" ]&&echo "skipping download cover"||wget -Y on -e "http_proxy=http://$proxy" "$cover" -O "$title.jpg"
 
-echo "Downloading and converting playlist"
-[ -f "$playlistsub" ]||curl -x "$proxy" -s "http://tv.nrk.no$playlist" |grep li|sed -e 's/<li>//' -e 's/[^t]//' -e 's/[^t]//' -e 's/<\/li>//' -n -e '2,$p'|nl -s ".  " >"$playlistsub"
-echo downfinish
+echo -e "\nDownloading and converting playlist...\n"
+[ -f "$playlistsub" ]&&echo "skipping download playlist"||curl -x "$proxy" -s "http://tv.nrk.no$playlist" |grep li|sed -e 's/<li>//' -e 's/[^t]//' -e 's/[^t]//' -e 's/<\/li>//' -n -e '2,$p'|nl -s ".  " >"$playlistsub"
+echo "down finished"
 
 
 echo "Downloading and converting audio..."
