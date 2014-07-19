@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# NRK Radio download script
+# NRK subtitles download script
 # Originally written by Ingvar 
 # Updated version by Morpfh
 # Updated version by zm1990s in 2014
@@ -31,7 +31,7 @@ user_agent="Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:24.0) Gecko/20100101 Fire
 title=$(
   curl -x "$proxy" -A "$user_agent" -s "$url" | grep '<title>' | sed 's/.*<title>\(.*\)<\/title>.*/\1/;'
 )
-mkdir "$title"
+[ -d "$title" ]||mkdir "$title"
 cd "$title"
 vfile="$title.flv"
 playlistsub="$title.txt"
@@ -54,10 +54,10 @@ cover=$(
   curl -x "$proxy" -s "$url" | awk -F\" '/data-posterimage/ { print $2 }'
 ) 
 #echo "http://tv.nrk.no$playlist"
-wget -Y on -e "http_proxy=http://$proxy" "$cover" -O "$title.jpg"
+[ -f "$title.jpg" ]||wget -Y on -e "http_proxy=http://$proxy" "$cover" -O "$title.jpg"
 
 echo "Downloading and converting playlist"
-curl -x "$proxy" -s "http://tv.nrk.no$playlist" |grep li|sed -e 's/<li>//' -e 's/[^t]//' -e 's/[^t]//' -e 's/<\/li>//' -n -e '2,$p'|nl -s ".  " >"$playlistsub"
+[ -f "$playlistsub" ]||curl -x "$proxy" -s "http://tv.nrk.no$playlist" |grep li|sed -e 's/<li>//' -e 's/[^t]//' -e 's/[^t]//' -e 's/<\/li>//' -n -e '2,$p'|nl -s ".  " >"$playlistsub"
 echo downfinish
 
 
