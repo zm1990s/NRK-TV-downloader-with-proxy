@@ -1737,7 +1737,7 @@
   $rename       = false;
   $showHeader   = true;
   $start        = 0;
-  $update       = false;
+  $update       = true;
 
   $options = array(
       0 => array(
