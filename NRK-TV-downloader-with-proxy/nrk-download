@@ -74,10 +74,10 @@ wget -Y on -e "http_proxy=http://$proxy" "http://tv.nrk.no$subtitles" -O subtitl
 echo downfinish
 if perl ../nrk-subtitles ./subtitle.tmp > "$subf"; then
 	rm subtitle.tmp
-	echo Finished 
+	echo Convert Finished 
 else
 	echo 
-	echo Failed
+	echo Convert Failed
 fi
 fi
 
