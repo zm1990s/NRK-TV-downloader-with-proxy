@@ -15,6 +15,8 @@ if [ "$*" = "" ]; then
   echo -e "the default proxy address is Goagent's 127.0.0.1:8087 \n"
   exit 0
 fi
+
+echo --------------------------------------------------------------------------
 #echo $2
 if [ "$2" != "-p" ]
 then proxy=""
@@ -25,21 +27,23 @@ fi
 fi
 #echo $proxy
 #echo $proxy
-curl -x "$proxy" -s "tv.nrk.no"||echo "Error: Cannot connect to NRK TV, Please consider using a Proxy"&&exit 1
+
+curl -x "$proxy" -s "tv.nrk.no">/dev/null
+if [ "$?" != 0 ]
+then echo "Error: Cannot connect to NRK TV, Please consider using a Proxy" &&exit 1
+fi
+
 url="$1"
 hdcore="2.7.6"
 user_agent="Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:24.0) Gecko/20100101 Firefox/24.0"
 title=$(
   curl -x "$proxy" -A "$user_agent" -s "$url" | grep '<title>' | sed 's/.*<title>\(.*\)<\/title>.*/\1/;'
 )
-
+[ -d "$title" ]||mkdir "$title"
+cd "$title"
 vfile="$title.flv"
 subf="$title.srt"
 
-if [ -f "$subf" ]; then
-  echo "Error: File \"$subf\" already exists."
-  exit 2
-fi
 
 if [ -f "$vfile" ]; then
   echo "Error: File \"$vfile\" already exists."
@@ -56,19 +60,28 @@ manifest="$manifest?hdcore=$hdcore"
 subtitles=$(
   curl -x "$proxy" -A "$user_agent" -s "$url" | awk -F\" '/data-subtitlesurl/ { print $2 }'
 ) 
-
+cover=$(
+  curl -x "$proxy" -s "$url" | awk -F\" '/data-posterimage/ { print $2 }'
+) 
+[ -f "$title.jpg" ]&&echo "skipping download cover"||wget -Y on -e "http_proxy=http://$proxy" "$cover" -O "$title.jpg"
+if [ -f "$title.srt" ]
+then 
+echo "srt exists, skipping"
+else
 echo "Downloading and converting subtitles..."
 wget -Y on -e "http_proxy=http://$proxy" "http://tv.nrk.no$subtitles" -O subtitle.tmp
 echo downfinish
-if perl ./nrk-subtitles ./subtitle.tmp > "$subf"; then
+if perl ../nrk-subtitles ./subtitle.tmp > "$subf"; then
 	rm subtitle.tmp
-	echo Finished 
+	echo Convert Finished 
 else
-	echo Failed
+	echo 
+	echo Convert Failed
+fi
 fi
 
 echo "Downloading and converting video..."
-php ./AdobeHDS.php --quality high --delete --outfile "$vfile" --manifest "$manifest";
+php ../AdobeHDS.php --quality high --delete --outfile "$vfile" --manifest "$manifest";
 
 # Clean up
 rm -f Cookies.txt

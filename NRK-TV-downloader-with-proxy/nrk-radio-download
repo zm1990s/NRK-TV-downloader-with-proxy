@@ -22,7 +22,11 @@ then proxy="127.0.0.1:8087"
 else proxy="$3"
 fi
 fi
-curl -x "$proxy" -s "radio.nrk.no"||echo "Error: Cannot connect to NRK Radio, Please consider using a Proxy"&&exit 1
+
+curl -x "$proxy" -s "radio.nrk.no">/dev/null
+if [ "$?" != 0 ]
+then echo "Error: Cannot connect to NRK Radio, Please consider using a Proxy"&&exit 1
+fi
 
 url="$1"
 hdcore="2.7.6"
