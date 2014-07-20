@@ -34,8 +34,11 @@ user_agent="Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:24.0) Gecko/20100101 Fire
 title=$(
   curl -x "$proxy" -A "$user_agent" -s "$url" | grep '<title>' | sed 's/.*<title>\(.*\)<\/title>.*/\1/;'
 )
-[ -d "$title" ]||mkdir "$title"
-cd "$title"
+
+rel=`echo $url|awk 'BEGIN{FS = "/"} {print $6}'`
+
+[ -d "$title-$rel" ]||mkdir "$title-$rel"
+cd "$title-$rel"
 vfile="$title.flv"
 playlistsub="$title.txt"
 if [ -f "$vfile" ]; then
