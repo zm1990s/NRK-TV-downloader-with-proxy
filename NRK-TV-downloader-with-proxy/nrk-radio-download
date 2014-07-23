@@ -56,6 +56,7 @@ manifest="$manifest?hdcore=$hdcore"
 playlist=$(
   curl -x "$proxy" -s "$url" | awk -F\" '/programplaylist/ { print $2 }'
 ) 
+echo $playlist
 cover=$(
   curl -x "$proxy" -s "$url" | awk -F\" '/data-posterimage/ { print $2 }'
 ) 
@@ -63,9 +64,13 @@ cover=$(
 [ -f "$title.jpg" ]&&echo "skipping download cover"||wget -Y on -e "http_proxy=http://$proxy" "$cover" -O "$title.jpg"
 
 echo -e "\nDownloading and converting playlist...\n"
+if [ ! "$playlist" = "" ]
+then
 [ -f "$playlistsub" ]&&echo "skipping download playlist"||curl -x "$proxy" -s "http://tv.nrk.no$playlist" |grep li|sed -e 's/<li>//' -e 's/[^t]//' -e 's/[^t]//' -e 's/<\/li>//' -n -e '2,$p'|nl -s ".  " >"$playlistsub"
 echo "down finished"
-
+else 
+echo "did not find any playlist !!!!!!!"
+fi
 
 echo "Downloading and converting audio..."
 php ../AdobeHDS.php --quality high --delete --outfile "$vfile" --manifest "$manifest";
