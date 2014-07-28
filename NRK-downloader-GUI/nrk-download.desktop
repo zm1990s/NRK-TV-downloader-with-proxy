@@ -2,6 +2,7 @@
 Categories=Network;
 Comment[en_US]=nrk-download
 Exec=~/.nrk-download/nrk-download
+Icon=go-down
 GenericName[en_US]=
 GenericName=
 MimeType=

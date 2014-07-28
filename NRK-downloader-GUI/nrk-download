@@ -47,11 +47,12 @@ downloaddir=`tail -1 ~/.nrk-conf.ini`
 
 kdedo()
 {
-url=`kdialog --title="Download URL" --inputbox "please input URL"`
+url=`kdialog --title="Download URL" --inputbox "please input URL"`||exit 1
+
 }
 gnomedo()
 {
-url=`zenity --title="Download URL" --entry --text="please input URL"`
+url=`zenity --title="Download URL" --entry --text="please input URL"`||exit 1
 }
 
 tv_down()
@@ -338,5 +339,5 @@ echo "Downloading and converting video..."
 
 # Clean up
 rm -f Cookies.txt
-notify-send -i finish "Video was stored in \"$vfile\""
+notify-send -i dialog-ok "Video was stored in \"$vfile\""
 
