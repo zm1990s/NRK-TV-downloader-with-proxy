@@ -1,0 +1,132 @@
+#!/usr/bin/perl
+
+# With TC fix (2013-03-11)
+# (previous fix did not work, this does)
+#
+# Script by tengil, based on ideas by ingvarha
+# Fetched from http://tengil.org/misc/nrk/nrk-subtitles/
+#
+
+use strict;
+use warnings;
+
+use Text::Iconv;
+use HTML::TokeParser::Simple;
+use utf8;
+
+die "$0 [file | url]\n" unless defined $ARGV[0];
+
+my $subtitles_xml = $ARGV[0];
+my $converter = Text::Iconv->new("UTF-8", "ISO-8859-1");
+my $tp;
+if ($subtitles_xml =~ /^http:\/\//) {
+	$tp = HTML::TokeParser::Simple->new(url => $subtitles_xml);
+} else {
+	$tp = HTML::TokeParser::Simple->new(file => $subtitles_xml);
+}
+
+if (!$tp) {
+  die "! No subtitles found.\n";
+}
+
+my $counter = 0;
+my $text = "";
+my $style_i = 0;
+
+while (my $token = $tp->get_token) {
+	if ($token->as_is =~ /
+			<p\s+
+			begin="(\d\d):(\d\d):(\d\d\.\d\d?\d?)"\s+
+			dur="(\d\d):(\d\d):(\d\d\.\d\d?\d?)"
+		/x) {
+		
+		my ($bhh, $bmm, $bss) = ($1, $2, $3);                         # +
+		my ($dhh, $dmm, $dss) = ($4, $5, $6);                         # +
+		
+		$bss = "$1.0$2" while $bss =~ /^(\d\d)\.(\d{1,2})$/;          # +
+		$dss = "$1.0$2" while $dss =~ /^(\d\d)\.(\d{1,2})$/;          # +
+		
+		my $tehh = $bhh + $dhh; # Time End Hour = Begin H + Dur H     # *
+		my $temm = $bmm + $dmm; # Time End Minute = Begin M + Dur M   # *
+		my $tess = $bss + $dss; # Time End Second.Millisecond ...     # *
+
+		if ($tess > 59.999) {
+			++$temm;
+			$tess -= 60;
+		}
+		if ($temm > 59) {
+			++$tehh;
+			$temm -= 60;
+		}
+
+		my $start = sprintf("%02d:%02d:%06.3f", $bhh, $bmm, $bss);    # *
+		my $end = sprintf("%02d:%02d:%06.3f", $tehh, $temm, $tess);
+
+		$start =~ s/\./,/;                                            # +
+		$end =~ s/\./,/;                                              # +
+
+		# Now, find the text.
+		# Should probably rather use something like HTML::FormatText
+		$text = "";
+		while ($token = $tp->get_token) {
+			# Skip an empty newline
+			next if $token->as_is =~ /\n\s*$/;
+			# Replace HTML newline with ASCII counterpart.
+			if ($token->is_start_tag('br')) {
+				$text .= "\n";
+				next;
+			}
+			# Skip closing BR-tag
+			next if $token->is_end_tag('br');
+			# Replace style span styled tags with SubRip-tags
+			# others with space. (Haven't seen bold, underline or font on NRK)
+			if ($token->is_start_tag('span')) {
+				if ($token->get_attr('style') eq 'italic') {
+					$style_i = 1;
+					$text .= "<i>";
+				} else {
+					$text .= " ";
+				}
+				next;
+			}
+			# Close Style-tags
+			if ($token->is_end_tag('span')) {
+				if ($style_i) {
+					$style_i = 0;
+					$text .= "</i>";
+				}
+				next;			
+			}
+
+			# Store the rest
+			$text .= $token->as_is 
+				unless $token->is_tag;
+
+			last if $token->as_is =~ /<p begin/ 
+				|| $token->is_end_tag('p');
+		}
+
+		# Totem and mplayer wants iso8859-1, so we convert, but 
+		# hyphen is inconvertible. Also; NRK-subs does not use space 
+		# after hyphen which (I) find bad to read.
+		$text =~ s/—/-/g;
+		$text =~ s/(^|\n)-(?=[^\s])/$1- /g;
+
+		# Whitespace fix
+		#$text =~ s/^\s+//g;	# Remove leading spaces
+		#$text =~ s/\n\s+/\n/g;	# Ditto within a line
+		$text =~ s/> />/g;	# Remove space after > tag
+		$text =~ s/  / /g;	# Remove double spaces, may come from 
+							# span tags
+
+		# Finally, produce .srt output
+		# Position can be added after $end (before \n) – but I see no 
+		# effect of positioning in mplayer, VLC etc.
+		# if (style_pos=left ) $pos = "X1:100 X2:100 Y1:100 Y2:100";
+		print ++$counter . "\n" . 
+			"$start --> $end\n" . 
+			$converter->convert("$text") . "\n\n";
+	}
+}
+
+

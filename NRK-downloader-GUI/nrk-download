@@ -1,0 +1,342 @@
+#!/bin/bash
+
+# NRK subtitles download script
+# Originally written by Ingvar 
+# Updated version by Morpfh
+# Updated version by zm1990s in 2014
+# SubRip: http://forum.doom9.org/showthread.php?p=470941#post470941
+#
+
+if [ ! `which zenity || which kdialog` ]
+then 
+notify-send -i error "please install zenity or kdialog"
+exit
+fi
+
+init.config()
+{
+if [ `which kdialog` ]
+then
+kdialog --title="Proxy-setup" --yesno "do you want to use a proxy?"&&proxy=`kdialog --title="Proxy-setup" --inputbox "please input proxy IP and port number" "127.0.0.1:8087"` 
+downloaddir=`kdialog --title "select default download folder" --getexistingdirectory "~/Downloads/"`
+
+else 
+zenity --title="Proxy-setup" --question --text="do you want to use a proxy"&&proxy=`zenity --title="Proxy-setup" --entry --text="please input proxy IP and port numbe" --entry-text="127.0.0.1:8087"`
+downloaddir=`zenity --title="select default download folder" --file-selection --directory`
+
+fi
+echo "$proxy">~/.nrk-conf.ini
+echo "$downloaddir">>~/.nrk-conf.ini
+
+}
+
+
+if [ ! -f ~/.nrk-conf.ini ]
+then 
+init.config
+fi
+#初始化设置，将配置保存在conf.ini. 然后读取配置文件，重新赋值
+
+progdir=$PWD
+proxy=`head -1 ~/.nrk-conf.ini`
+downloaddir=`tail -1 ~/.nrk-conf.ini`
+
+#echo $downloaddir
+#echo $proxy
+
+
+kdedo()
+{
+url=`kdialog --title="Download URL" --inputbox "please input URL"`
+}
+gnomedo()
+{
+url=`zenity --title="Download URL" --entry --text="please input URL"`
+}
+
+tv_down()
+{
+
+
+#-----------------------------------------------------------------------------------------KDE
+if [ `which kdialog` ]
+then
+dbusRef=`kdialog --progressbar "downloading, please wait" 4`
+qdbus $dbusRef Set "" value 1
+qdbus $dbusRef setLabelText "resoving"
+###########################
+
+
+hdcore="2.7.6"
+user_agent="Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:24.0) Gecko/20100101 Firefox/24.0"
+title=$(
+  curl -x "$proxy" -A "$user_agent" -s "$url" | grep '<title>' | sed 's/.*<title>\(.*\)<\/title>.*/\1/;'
+)
+rel=`echo $url|awk 'BEGIN{FS = "/"} {print $6}'`
+cd $downloaddir
+[ -d "$title-$rel" ]||mkdir "$title-$rel"
+cd "$title-$rel"
+vfile="$title.flv"
+subf="$title.srt"
+
+
+if [ -f "$vfile" ]; then
+ notify-send -i error "Error: File \"$vfile\" 
+ already exists."
+  exit 2
+fi
+
+echo "Downloading $title"
+qdbus $dbusRef Set "" value 2
+qdbus $dbusRef setLabelText "downloading cover & subtitles"
+
+manifest=$(
+  curl -x "$proxy" -A "$user_agent" -s "$url" | awk -F\" '/data-media="/ {print $2}'
+)
+manifest="$manifest?hdcore=$hdcore"
+
+subtitles=$(
+  curl -x "$proxy" -A "$user_agent" -s "$url" | awk -F\" '/data-subtitlesurl/ { print $2 }'
+) 
+cover=$(
+  curl -x "$proxy" -s "$url" | awk -F\" '/data-posterimage/ { print $2 }'
+) 
+[ -f "$title.jpg" ]&&echo "skipping download cover"||wget -Y on -e "http_proxy=http://$proxy" "$cover" -O "$title.jpg"
+if [ -f "$title.srt" ]
+then 
+echo "srt exists, skipping"
+else
+echo "Downloading and converting subtitles..."
+wget -Y on -e "http_proxy=http://$proxy" "http://tv.nrk.no$subtitles" -O subtitle.tmp
+echo downfinish
+if perl "$progdir"/nrk-subtitles ./subtitle.tmp > "$subf"; then
+	rm subtitle.tmp
+	echo Convert Finished 
+else
+	echo 
+	echo Convert Failed
+fi
+fi
+qdbus $dbusRef Set "" value 3
+qdbus $dbusRef setLabelText "downloading video"
+php "$progdir"/AdobeHDS.php --quality high --delete --outfile "$vfile" --manifest "$manifest"
+qdbus $dbusRef Set "" value 4
+qdbus $dbusRef setLabelText "download finished"
+sleep 1
+qdbus $dbusRef close
+else 
+#---------------------------------------------------------------------------------------Gnome
+zenity --progress --text="resoving, don't panic" &
+
+hdcore="2.7.6"
+user_agent="Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:24.0) Gecko/20100101 Firefox/24.0"
+title=$(
+  curl -x "$proxy" -A "$user_agent" -s "$url" | grep '<title>' | sed 's/.*<title>\(.*\)<\/title>.*/\1/;'
+)
+rel=`echo $url|awk 'BEGIN{FS = "/"} {print $6}'`
+
+
+#------------------------phase 1,resoving
+cd $downloaddir
+[ -d "$title-$rel" ]||mkdir "$title-$rel"
+cd "$title-$rel"
+vfile="$title.flv"
+subf="$title.srt"
+
+
+if [ -f "$vfile" ]; then
+ notify-send -i error "Error: File \"$vfile\" 
+ already exists."
+  exit 2
+fi
+
+echo "Downloading $title"
+
+
+manifest=$(
+  curl -x "$proxy" -A "$user_agent" -s "$url" | awk -F\" '/data-media="/ {print $2}'
+)
+manifest="$manifest?hdcore=$hdcore"
+killall zenity
+subtitles=$(
+  curl -x "$proxy" -A "$user_agent" -s "$url" | awk -F\" '/data-subtitlesurl/ { print $2 }'
+) 
+cover=$(
+  curl -x "$proxy" -s "$url" | awk -F\" '/data-posterimage/ { print $2 }'
+) 
+
+[ -f "$title.jpg" ]&&echo "skipping download cover"||wget -Y on -e "http_proxy=http://$proxy" "$cover" -O "$title.jpg"|zenity --text="downloading cover & subtitles" --progress --pulsate --auto-close 
+if [ -f "$title.srt" ]
+then 
+echo "srt exists, skipping"
+else
+echo "Downloading and converting subtitles..."
+wget -Y on -e "http_proxy=http://$proxy" "http://tv.nrk.no$subtitles" -O subtitle.tmp
+echo downfinish
+if perl "$progdir"/nrk-subtitles ./subtitle.tmp > "$subf"; then
+	rm subtitle.tmp
+	echo Convert Finished 
+else
+	echo 
+	echo Convert Failed
+fi
+fi
+#------------------------phase 2,cover & subtitles
+php "$progdir"/AdobeHDS.php --quality high --delete --outfile "$vfile" --manifest "$manifest"|zenity --title="downloading video" --text="downloading video" --progress --pulsate --auto-close 
+#------------------------finished
+fi
+
+}
+
+
+radio_down()
+{
+
+
+#--------------------------------------------------------------------------------------KDE
+if [ `which kdialog` ]
+then
+dbusRef=`kdialog --progressbar "downloading, please wait" 4`
+qdbus $dbusRef Set "" value 1
+qdbus $dbusRef setLabelText "resoving"
+###########################
+hdcore="2.7.6"
+user_agent="Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:24.0) Gecko/20100101 Firefox/24.0"
+title=$(
+  curl -x "$proxy" -A "$user_agent" -s "$url" | grep '<title>' | sed 's/.*<title>\(.*\)<\/title>.*/\1/;'
+)
+
+rel=`echo $url|awk 'BEGIN{FS = "/"} {print $6}'`
+cd $downloaddir
+[ -d "$title-$rel" ]||mkdir "$title-$rel"
+cd "$title-$rel"
+vfile="$title.flv"
+playlistsub="$title.txt"
+if [ -f "$vfile" ]; then
+ notify-send -i error "Error: File \"$vfile\" 
+ already exists."
+  exit 2
+fi
+
+#echo "Downloading $title"
+#####################
+
+
+qdbus $dbusRef Set "" value 2
+qdbus $dbusRef setLabelText "downloading cover & playlist"
+
+manifest=$(
+  curl -x "$proxy" -A "$user_agent" -s "$url" | awk -F\" '/data-media="/ {print $2}'
+)
+manifest="$manifest?hdcore=$hdcore"
+
+playlist=$(
+  curl -x "$proxy" -s "$url" | awk -F\" '/programplaylist/ { print $2 }'
+) 
+echo $playlist
+cover=$(
+  curl -x "$proxy" -s "$url" | awk -F\" '/data-posterimage/ { print $2 }'
+) 
+#echo "http://tv.nrk.no$playlist"
+[ -f "$title.jpg" ]&&echo "skipping download cover"||wget -Y on -e "http_proxy=http://$proxy" "$cover" -O "$title.jpg"
+
+echo -e "\nDownloading and converting playlist...\n"
+if [ ! "$playlist" = "" ]
+then
+[ -f "$playlistsub" ]&&echo "skipping download playlist"||curl -x "$proxy" -s "http://tv.nrk.no$playlist" |grep li|sed -e 's/<li>//' -e 's/[^t]//' -e 's/[^t]//' -e 's/<\/li>//' -n -e '2,$p'|nl -s ".  " >"$playlistsub"
+echo "down finished"
+else 
+echo "did not find any playlist !!!!!!!"
+fi
+
+qdbus $dbusRef Set "" value 3
+qdbus $dbusRef setLabelText "downloading video"
+php "$progdir"/AdobeHDS.php --quality high --delete --outfile "$vfile" --manifest "$manifest"
+qdbus $dbusRef Set "" value 4
+qdbus $dbusRef setLabelText "download finished"
+sleep 1
+qdbus $dbusRef close
+else 
+#---------------------------------------------------------------------------------------Gnome
+zenity --progress --text="resoving, don't panic" &
+#notify-send "starting"
+hdcore="2.7.6"
+user_agent="Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:24.0) Gecko/20100101 Firefox/24.0"
+title=$(
+  curl -x "$proxy" -A "$user_agent" -s "$url" | grep '<title>' | sed 's/.*<title>\(.*\)<\/title>.*/\1/;'
+)
+
+rel=`echo $url|awk 'BEGIN{FS = "/"} {print $6}'`
+
+cd $downloaddir
+[ -d "$title-$rel" ]||mkdir "$title-$rel"
+cd "$title-$rel"
+vfile="$title.flv"
+playlistsub="$title.txt"
+if [ -f "$vfile" ]; then
+ notify-send -i error "Error: File \"$vfile\" 
+ already exists."
+  exit 2
+fi
+
+#echo "Downloading $title"
+#####################
+
+manifest=$(
+  curl -x "$proxy" -A "$user_agent" -s "$url" | awk -F\" '/data-media="/ {print $2}'
+)
+manifest="$manifest?hdcore=$hdcore"
+
+playlist=$(
+  curl -x "$proxy" -s "$url" | awk -F\" '/programplaylist/ { print $2 }'
+) 
+echo $playlist
+cover=$(
+  curl -x "$proxy" -s "$url" | awk -F\" '/data-posterimage/ { print $2 }'
+) 
+killall zenity
+notify-send "resoving finished"
+#echo "http://tv.nrk.no$playlist"
+[ -f "$title.jpg" ]&&echo "skipping download cover"||wget -Y on -e "http_proxy=http://$proxy" "$cover" -O "$title.jpg"|zenity --text="downloading cover & playlist" --progress --pulsate --auto-close 
+
+echo -e "\nDownloading and converting playlist...\n"
+if [ ! "$playlist" = "" ]
+then
+[ -f "$playlistsub" ]&&echo "skipping download playlist"||curl -x "$proxy" -s "http://tv.nrk.no$playlist" |grep li|sed -e 's/<li>//' -e 's/[^t]//' -e 's/[^t]//' -e 's/<\/li>//' -n -e '2,$p'|nl -s ".  " >"$playlistsub"
+echo "down finished"
+else 
+echo "did not find any playlist !!!!!!!"
+fi
+php "$progdir"/AdobeHDS.php --quality high --delete --outfile "$vfile" --manifest "$manifest"|zenity --text="downloading video" --progress --pulsate --auto-close 
+fi
+}
+
+
+
+#echo $2
+
+if [ `which kdialog` ]
+then
+kdedo
+else 
+gnomedo 
+fi
+#echo ...................
+#perl "$progdir"/nrk-subtitles ./subtitle.tmp
+
+
+if [ `echo "$url"|grep tv.nrk.no `  ]
+then 
+tv_down
+else
+radio_down
+fi
+
+echo "Downloading and converting video..."
+
+
+
+# Clean up
+rm -f Cookies.txt
+notify-send -i finish "Video was stored in \"$vfile\""
+

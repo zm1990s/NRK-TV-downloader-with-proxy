@@ -1,0 +1,8 @@
+建议直接运行 install.sh 安装，会在家目录创建一个快捷方式
+
+首次运行会询问用户是否使用代理，并且要选择默认下载路径
+
+chmod +x install.sh
+./install.sh
+to install, it'll copy necessary files to ~/.nrk-download and create a desktop entry in your Home directory
+the script will ask you whether you want to use proxy or not, and let you choose a default download directory (have to select one !) on first run

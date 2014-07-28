@@ -1,0 +1,18 @@
+[Desktop Entry]
+Categories=Network;
+Comment[en_US]=nrk-download
+Exec=~/.nrk-download/nrk-download
+GenericName[en_US]=
+GenericName=
+MimeType=
+Name[en_US]=nrk-download
+Name=nrl-download
+Path=~/.nrk-download/
+StartupNotify=true
+Terminal=false
+TerminalOptions=
+Type=Application
+X-DBUS-ServiceName=
+X-DBUS-StartupType=
+X-KDE-SubstituteUID=false
+X-KDE-Username=
