@@ -97,7 +97,6 @@ NRK-downloader-with-proxy-CLI
 
 我做了些修改，使其支持http代理（常用的就是Goagent 代理）
 
-**version-1**
 
 **功能简介**
 
