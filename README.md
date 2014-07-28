@@ -32,7 +32,7 @@ and written a scripts for NRK Radios
       
       you can leave this blank that'll means use the default 127.0.0.1:8087.
 
-**Example:** `./nrk-download http://tv.nrk.no/serie/store-leker/koid24008909/sesong-1/episode-5`
+**Examples:** `./nrk-download http://tv.nrk.no/serie/store-leker/koid24008909/sesong-1/episode-5`
 
 or 	`./nrk-download http://tv.nrk.no/serie/store-leker/koid24008909/sesong-1/episode-5 -p 127.0.0.1:2089`
 
