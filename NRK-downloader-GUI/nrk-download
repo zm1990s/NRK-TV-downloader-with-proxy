@@ -37,7 +37,7 @@ init.config
 fi
 #初始化设置，将配置保存在conf.ini. 然后读取配置文件，重新赋值
 
-progdir=$PWD
+progdir="$HOME/.nrk-download"
 proxy=`head -1 ~/.nrk-conf.ini`
 downloaddir=`tail -1 ~/.nrk-conf.ini`
 
