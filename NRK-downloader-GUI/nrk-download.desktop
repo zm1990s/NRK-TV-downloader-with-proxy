@@ -1,14 +1,15 @@
 [Desktop Entry]
 Categories=Network;
 Comment[en_US]=nrk-download
+Comment=nrk-download
 Exec=~/.nrk-download/nrk-download
-Icon=go-down
 GenericName[en_US]=
 GenericName=
+Icon=go-down
 MimeType=
 Name[en_US]=nrk-download
-Name=nrl-download
-Path=~/.nrk-download/
+Name=nrk-download
+Path="$HOME"/.nrk-download/
 StartupNotify=true
 Terminal=false
 TerminalOptions=
